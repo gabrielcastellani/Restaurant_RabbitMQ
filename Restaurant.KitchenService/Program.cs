@@ -13,9 +13,9 @@ var factory = new ConnectionFactory
 using var connection = await factory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();
 
-await channel.ExchangeDeclareAsync(RabbitMQConfig.OrderExchange, ExchangeType.Direct);
+await channel.ExchangeDeclareAsync(RabbitMQConfig.Exchange, ExchangeType.Direct);
 await channel.QueueDeclareAsync(RabbitMQConfig.KitchenQueue, durable: true, exclusive: false, autoDelete: false);
-await channel.QueueBindAsync(RabbitMQConfig.KitchenQueue, RabbitMQConfig.OrderExchange, RabbitMQConfig.OrderRoutingKey);
+await channel.QueueBindAsync(RabbitMQConfig.KitchenQueue, RabbitMQConfig.Exchange, RabbitMQConfig.ReadyRoutingKey);
 
 var consumer = new AsyncEventingBasicConsumer(channel);
 consumer.ReceivedAsync += async (s, e) =>
@@ -29,6 +29,8 @@ consumer.ReceivedAsync += async (s, e) =>
         Console.WriteLine($"[Kitchen Service] Order received: {order.Id}");
         order.Status = OrderStatus.Cooking;
 
+        // Do something to simulate the cooking process.
+        // Here is a point that can be sent to another queue to inform that the order is being produced...
         Thread.Sleep(3000);
 
         order.Status = OrderStatus.Ready;
@@ -39,13 +41,13 @@ consumer.ReceivedAsync += async (s, e) =>
         var readyBody = Encoding.UTF8.GetBytes(readyMessage);
 
         await channel.BasicPublishAsync(
-            exchange: RabbitMQConfig.OrderExchange,
+            exchange: RabbitMQConfig.Exchange,
             routingKey: RabbitMQConfig.ReadyRoutingKey,
             body: readyBody);
     }
 };
 
-await channel.BasicConsumeAsync(queue: RabbitMQConfig.KitchenQueue, autoAck: true, consumer: consumer);
+await channel.BasicConsumeAsync(queue: RabbitMQConfig.OrderQueue, autoAck: true, consumer: consumer);
 
 Console.WriteLine("[Kitchen Service] Service started. Waiting for orders...");
 Console.ReadLine();

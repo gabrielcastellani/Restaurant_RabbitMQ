@@ -12,9 +12,9 @@ var factory = new ConnectionFactory
 using var connection = await factory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();
 
-await channel.ExchangeDeclareAsync(RabbitMQConfig.OrderExchange, ExchangeType.Direct);
+await channel.ExchangeDeclareAsync(RabbitMQConfig.Exchange, ExchangeType.Direct);
 await channel.QueueDeclareAsync(RabbitMQConfig.OrderQueue, durable: true, exclusive: false, autoDelete: false);
-await channel.QueueBindAsync(RabbitMQConfig.OrderQueue, RabbitMQConfig.OrderExchange, RabbitMQConfig.OrderRoutingKey);
+await channel.QueueBindAsync(RabbitMQConfig.OrderQueue, RabbitMQConfig.Exchange, RabbitMQConfig.OrderRoutingKey);
 
 Console.WriteLine("[Order Service] Service started. Press Enter to create orders...");
 
@@ -27,7 +27,7 @@ while (true)
     var body = Encoding.UTF8.GetBytes(message);
 
     await channel.BasicPublishAsync(
-        exchange: RabbitMQConfig.OrderExchange,
+        exchange: RabbitMQConfig.Exchange,
         routingKey: RabbitMQConfig.OrderRoutingKey,
         body: body);
 

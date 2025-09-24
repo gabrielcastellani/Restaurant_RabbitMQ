@@ -13,9 +13,9 @@ var factory = new ConnectionFactory
 using var connection = await factory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();
 
-await channel.ExchangeDeclareAsync(RabbitMQConfig.OrderExchange, ExchangeType.Direct);
+await channel.ExchangeDeclareAsync(RabbitMQConfig.Exchange, ExchangeType.Direct);
 await channel.QueueDeclareAsync(RabbitMQConfig.DeliveryQueue, durable: true, exclusive: false, autoDelete: false);
-await channel.QueueBindAsync(RabbitMQConfig.DeliveryQueue, RabbitMQConfig.OrderExchange, RabbitMQConfig.ReadyRoutingKey);
+await channel.QueueBindAsync(RabbitMQConfig.DeliveryQueue, RabbitMQConfig.Exchange, RabbitMQConfig.DeliveryRoutingKey);
 
 var consumer = new AsyncEventingBasicConsumer(channel);
 consumer.ReceivedAsync += async (s, e) =>
@@ -37,7 +37,7 @@ consumer.ReceivedAsync += async (s, e) =>
 };
 
 await channel.BasicConsumeAsync(
-    queue: RabbitMQConfig.DeliveryQueue,
+    queue: RabbitMQConfig.KitchenQueue,
     autoAck: true,
     consumer: consumer);
 
